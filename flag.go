@@ -80,104 +80,108 @@ func Getopt(
 			continue
 		}
 
-		if strings.HasPrefix(e, "-") {
+		// not an option
+		if !strings.HasPrefix(e, "-") {
+			// if previous option was not recognized then ignore this value
+			if isUnrecognizedOpt {
+				isUnrecognizedOpt = false
+				continue
+			}
 
-			isUnrecognizedOpt = false
+			if !optcb("", e) {
+				return
+			}
 
-			// single hyphen - treat as an argument
-			if len(e) == 1 {
-				if !optcb("", "-") {
+			continue
+		}
+
+		// is an option
+
+		isUnrecognizedOpt = false
+
+		// single hyphen - treat as an argument
+		if len(e) == 1 {
+			if !optcb("", "-") {
+				return
+			}
+			continue
+		}
+
+		// long flag
+		if strings.HasPrefix(e, "--") {
+			name := e[2:]
+
+			if name == "" {
+				// this is terminator
+				currentFlag = ""
+				isTerminated = true
+				continue
+			}
+
+			if strings.Contains(name, "=") { // may be --foo=bar format
+				parts := strings.SplitN(name, "=", 2)
+				if len(parts) != 2 {
+					continue
+				}
+				v, f := mfmt[parts[0]]
+				if !f || v != ":" {
+					isUnrecognizedOpt = true
+					if !optcb("?", parts[0]) {
+						return
+					}
+					continue
+				}
+				if !optcb(parts[0], parts[1]) {
+					return
+				}
+			} else {
+				v, f := mfmt[name]
+				if !f {
+					isUnrecognizedOpt = true
+					if !optcb("?", name) {
+						return
+					}
+					continue
+				}
+
+				if v == ":" {
+					currentFlag = name
+				} else {
+					if !optcb(name, "") {
+						return
+					}
+				}
+			}
+			continue
+		}
+
+		// (short) option
+
+		for j := 1; j < len(e); j++ {
+			nameb := byte(e[j])
+			name := string([]byte{nameb})
+			v, f := mfmt[name]
+			if !f {
+				isUnrecognizedOpt = true
+				if !optcb("?", name) {
 					return
 				}
 				continue
 			}
-
-			// long flag
-			if strings.HasPrefix(e, "--") {
-				name := e[2:]
-
-				if name == "" {
-					// this is terminator
-					currentFlag = ""
-					isTerminated = true
-					continue
-				}
-
-				if strings.Contains(name, "=") { // may be --foo=bar format
-					parts := strings.SplitN(name, "=", 2)
-					if len(parts) != 2 {
-						continue
-					}
-					v, f := mfmt[parts[0]]
-					if !f || v != ":" {
-						isUnrecognizedOpt = true
-						if !optcb("?", parts[0]) {
-							return
-						}
-						continue
-					}
-					if !optcb(parts[0], parts[1]) {
+			if v == ":" { // has value
+				if j < len(e)-1 { // has value within this argv element
+					if !optcb(name, e[j+1:]) {
 						return
 					}
-				} else {
-					v, f := mfmt[name]
-					if !f {
-						isUnrecognizedOpt = true
-						if !optcb("?", name) {
-							return
-						}
-						continue
-					}
-
-					if v == ":" {
-						currentFlag = name
-					} else {
-						if !optcb(name, "") {
-							return
-						}
-					}
+					break
+				} else { // has value in next argv element
+					currentFlag = name
 				}
-			} else { // single flag
-
-				for j := 1; j < len(e); j++ {
-					nameb := byte(e[j])
-					name := string([]byte{nameb})
-					v, f := mfmt[name]
-					if !f {
-						isUnrecognizedOpt = true
-						if !optcb("?", name) {
-							return
-						}
-						continue
-					}
-					if v == ":" { // has value
-						if j < len(e)-1 { // has value within this argv element
-							if !optcb(name, e[j+1:]) {
-								return
-							}
-							break
-						} else { // has value in next argv element
-							currentFlag = name
-						}
-					} else { // is bool
-						if !optcb(name, "") {
-							return
-						}
-					}
+			} else { // is bool
+				if !optcb(name, "") {
+					return
 				}
 			}
-			continue
-		}
-
-		// if previous option was not recognized then ignore this value
-		if isUnrecognizedOpt {
-			isUnrecognizedOpt = false
-			continue
-		}
-
-		// not an option
-		if !optcb("", e) {
-			return
 		}
 	}
 

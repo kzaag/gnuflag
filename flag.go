@@ -107,7 +107,7 @@ func Getopt(
 			continue
 		}
 
-		// long flag
+		// long option
 		if strings.HasPrefix(e, "--") {
 			name := e[2:]
 
@@ -134,28 +134,32 @@ func Getopt(
 				if !optcb(parts[0], parts[1]) {
 					return
 				}
-			} else {
-				v, f := mfmt[name]
-				if !f {
-					isUnrecognizedOpt = true
-					if !optcb("?", name) {
-						return
-					}
-					continue
-				}
 
-				if v == ":" {
-					currentFlag = name
-				} else {
-					if !optcb(name, "") {
-						return
-					}
+				continue
+			}
+
+			// either bool or value in the next argument
+
+			v, f := mfmt[name]
+			if !f {
+				isUnrecognizedOpt = true
+				if !optcb("?", name) {
+					return
+				}
+				continue
+			}
+
+			if v == ":" {
+				currentFlag = name
+			} else {
+				if !optcb(name, "") {
+					return
 				}
 			}
 			continue
 		}
 
-		// (short) option
+		// short option
 
 		for j := 1; j < len(e); j++ {
 			nameb := byte(e[j])

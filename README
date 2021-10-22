@@ -1,5 +1,4 @@
-package gnuflag parses command line arguments, 
-using POSIX conventions present @ https://www.gnu.org/software/libc/manual/html_node/Argument-Syntax.html
+package gnuflag parses command line arguments using POSIX conventions present @ https://www.gnu.org/software/libc/manual/html_node/Argument-Syntax.html
 see docs.go for documentation.
 see flag_test.go for examples
 
